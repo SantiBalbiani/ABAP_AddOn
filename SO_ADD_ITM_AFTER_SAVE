@@ -1,0 +1,83 @@
+*–Check if the user has pressed SAVE button
+
+IF sy–ucomm EQ ‘SICH’.
+
+ 
+
+*–Read table XVBAP to check if the material is not already added
+
+           READ TABLE xvbap INTO ls_xvbap WITH KEY matnr = 000000000000240000
+
+                                                     updkz = ‘I’.
+
+           IF sy–subrc NE 0.
+
+             CLEAR: vbap.
+
+*–Initialize workareas for VBAP and VBEP
+
+
+
+             PERFORM vbap_unterlegen(sapfv45p).
+
+             PERFORM vbep_unterlegen(sapfv45e).
+
+*–Populate material number and quantity
+
+             vbap–matnr     = ‘000000000000240000’.
+
+             rv45a–kwmeng   = 1000.
+
+*–Call standard performs to populate material details.
+
+*–Perform for material validations and details
+
+             PERFORM vbap–matnr_pruefen(sapfv45p) USING charx sy–subrc.
+
+*–Perform for item category determination. This will take care of substitution items if any for this material.
+
+             PERFORM vbap–pstyv_pruefen(sapfv45p).
+
+*–Perform for filling VBAP with default values from configuration and master tables
+
+             PERFORM vbap_fuellen(sapfv45p).
+
+             PERFORM vbap–matnr_null_pruefen(sapfv45p).
+
+             PERFORM vbep–wmeng_setzen(sapfv45e).
+
+*–Perform to check sales unit
+
+             PERFORM vbap–vrkme_pruefen(sapfv45p) USING charx
+
+                   CHANGING sy–subrc sy–msgid sy–msgty sy–msgno
+
+                            sy–msgv1 sy–msgv2 sy–msgv3 sy–msgv4.
+
+*–Perform to update VBAP values
+
+             PERFORM vbap_bearbeiten(sapfv45p).
+
+*–Perform for filling VBEP with default values. This will take care of schedule lines of the item
+
+             PERFORM vbep_fuellen(sapfv45e).
+
+*–Perform to check quantity
+
+             PERFORM vbep–wmeng_pruefen(sapfv45e) USING charx
+
+                   CHANGING sy–subrc sy–msgid sy–msgty sy–msgno
+
+                            sy–msgv1 sy–msgv2 sy–msgv3 sy–msgv4.
+
+*–Perform to update VBEP values
+
+             PERFORM vbep_bearbeiten(sapfv45e).
+
+*–Perform to fill conditions and pricing data
+
+             PERFORM vbap_bearbeiten_ende(sapfv45p).
+
+           ENDIF.
+
+         ENDIF.
